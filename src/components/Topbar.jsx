@@ -3,7 +3,8 @@ import { useApp } from '../lib/store.jsx';
 import { Icon } from './Icon.jsx';
 import { pageLabel } from './Sidebar.jsx';
 
-const today = new Intl.DateTimeFormat('vi', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+const clock = new Intl.DateTimeFormat('vi', { hour: '2-digit', minute: '2-digit' });
+const today =new Intl.DateTimeFormat('vi', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
 function currentTheme() {
   const set = document.documentElement.dataset.theme;
@@ -12,7 +13,7 @@ function currentTheme() {
 }
 
 export function Topbar({ route, onOpenNav }) {
-  const { query, setQuery, refresh, vi, toggleVi } = useApp();
+  const { query, setQuery, refresh, refreshing, refreshedAt, vi, toggleVi } = useApp();
   const [theme, setTheme] = useState(currentTheme);
 
   const toggleTheme = () => {
@@ -50,9 +51,18 @@ export function Topbar({ route, onOpenNav }) {
         <Icon name="translate" />
         <span className="icon-btn-text">Tiếng Việt</span>
       </button>
-      <button className="icon-btn" onClick={refresh} title="Tải lại dữ liệu mới nhất">
+      <span className="refresh-status" aria-live="polite">
+        {refreshing ? 'Đang tải dữ liệu mới…' : refreshedAt ? `Đã cập nhật lúc ${clock.format(refreshedAt)}` : ''}
+      </span>
+      <button
+        className="icon-btn refresh-btn"
+        onClick={refresh}
+        disabled={refreshing}
+        aria-busy={refreshing}
+        title="Bỏ dữ liệu lưu tạm và tải lại từ tất cả nguồn"
+      >
         <Icon name="refresh" />
-        <span className="icon-btn-text">Làm mới</span>
+        <span className="icon-btn-text">{refreshing ? 'Đang tải…' : 'Làm mới'}</span>
       </button>
       <button
         className="icon-btn"

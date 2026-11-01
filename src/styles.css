@@ -322,6 +322,24 @@ main {
   border-color: var(--ink);
 }
 
+/* Nút Làm mới: biểu tượng quay khi đang tải, bên cạnh ghi giờ cập nhật */
+.refresh-status {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.refresh-btn[aria-busy='true'] svg {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .lang-btn[aria-pressed='false'] {
   color: var(--muted);
 }
@@ -1074,6 +1092,7 @@ main {
   }
 
   .today,
+  .refresh-status,
   .icon-btn-text {
     display: none;
   }
@@ -1120,5 +1139,9 @@ main {
   .sidebar,
   .nav-backdrop {
     transition: none;
+  }
+
+  .refresh-btn[aria-busy='true'] svg {
+    animation: none;
   }
 }

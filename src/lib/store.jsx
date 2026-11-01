@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { cached } from './cache.js';
 
 const AppContext = createContext(null);
@@ -28,7 +28,45 @@ export function AppProvider({ children }) {
     });
   }, []);
 
-  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  // Theo dõi các lần tải đang chạy để nút "Làm mới" biết khi nào xong.
+  // Dùng ref vì effect của trang con chạy trước effect của Provider trong cùng một lần render.
+  const inflight = useRef(0);
+  const refreshStart = useRef(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshedAt, setRefreshedAt] = useState(null);
+
+  const finishRefresh = useCallback(() => {
+    if (!refreshStart.current) return;
+    // Giữ hiệu ứng ít nhất 600ms để luôn thấy được là đã bấm.
+    const wait = Math.max(0, 600 - (Date.now() - refreshStart.current));
+    refreshStart.current = 0;
+    setTimeout(() => {
+      setRefreshing(false);
+      setRefreshedAt(Date.now());
+    }, wait);
+  }, []);
+
+  const track = useMemo(
+    () => ({
+      begin: () => inflight.current++,
+      end: () => {
+        inflight.current = Math.max(0, inflight.current - 1);
+        if (inflight.current === 0) finishRefresh();
+      },
+    }),
+    [finishRefresh],
+  );
+
+  const refresh = useCallback(() => {
+    refreshStart.current = Date.now();
+    setRefreshing(true);
+    setTick((t) => t + 1);
+  }, []);
+
+  // Trang không có dữ liệu cần tải (ví dụ Đã lưu): kết thúc ngay sau lần render này.
+  useEffect(() => {
+    if (tick && inflight.current === 0) finishRefresh();
+  }, [tick, finishRefresh]);
 
   const [vi, setViState] = useState(() => {
     try {
@@ -47,7 +85,9 @@ export function AppProvider({ children }) {
   }, []);
 
   return (
-    <AppContext.Provider value={{ query, setQuery, tick, refresh, saved, toggleSave, vi, toggleVi }}>
+    <AppContext.Provider
+      value={{ query, setQuery, tick, refresh, refreshing, refreshedAt, track, saved, toggleSave, vi, toggleVi }}
+    >
       {children}
     </AppContext.Provider>
   );
@@ -57,7 +97,7 @@ export const useApp = () => useContext(AppContext);
 
 // Tải dữ liệu qua cache; bấm "Làm mới" (tick tăng) hoặc "Thử lại" thì bỏ qua cache.
 export function useData([key, fetcher]) {
-  const { tick } = useApp();
+  const { tick, track } = useApp();
   const seen = useRef({ tick, retry: 0 });
   const [retry, setRetry] = useState(0);
   const [state, setState] = useState({ items: null, error: null, stale: false, loading: true });
@@ -67,13 +107,15 @@ export function useData([key, fetcher]) {
     const force = seen.current.tick !== tick || seen.current.retry !== retry;
     seen.current = { tick, retry };
     setState((s) => ({ ...s, loading: true, error: null }));
+    track.begin();
     cached(key, fetcher, { force })
       .then((entry) => {
         if (alive) setState({ items: entry.v, error: entry.error || null, stale: !!entry.stale, loading: false });
       })
       .catch((error) => {
         if (alive) setState({ items: null, error, stale: false, loading: false });
-      });
+      })
+      .finally(track.end);
     return () => {
       alive = false;
     };
