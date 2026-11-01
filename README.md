@@ -9,25 +9,28 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-Không cần API key. Phần lớn nguồn được gọi thẳng từ trình duyệt; riêng GitHub Trending, Lobsters và RSS các trang tin bảo mật không cho phép điều đó (thiếu CORS) nên đi qua `/proxy/*`. Danh sách nguồn nằm trong `proxy-targets.js`, dùng chung cho:
+Không cần API key. Phần lớn nguồn được gọi thẳng từ trình duyệt; riêng GitHub Trending, Lobsters và RSS các trang tin bảo mật không cho phép điều đó (thiếu CORS) nên đi qua `/proxy/*`. Danh sách nguồn nằm trong `proxy-targets.js`, phần chuyển tiếp trong `proxy-handler.js`, dùng chung cho:
 
 - proxy của Vite khi chạy trên máy (`vite.config.js`);
-- Cloudflare Pages Function khi chạy thật (`functions/proxy/[[path]].js`).
+- Cloudflare Workers (`worker/index.js` + `wrangler.jsonc`);
+- Cloudflare Pages (`functions/proxy/[[path]].js`).
 
-## Đưa lên Cloudflare Pages
+Proxy gắn header `X-Mach-Proxy` vào phản hồi; nơi chạy app không có proxy thì app báo lỗi rõ ràng thay vì hiện danh sách rỗng.
 
-Cách 1, nối với Git (tự build mỗi lần push): tạo project Pages từ repo, Build command `npm run build`, Build output directory `dist`. Cloudflare tự nhận thư mục `functions/`. Phiên bản Node lấy từ file `.node-version`.
+## Đưa lên Cloudflare
 
-Cách 2, đẩy từ máy:
+Workers (đang dùng, ví dụ `ai-news.<tài khoản>.workers.dev`): `wrangler.jsonc` khai báo Worker tên `ai-news`, phục vụ file tĩnh trong `dist` và chỉ chạy Worker cho `/proxy/*`.
 
-```bash
-npx wrangler login     # lần đầu
-npm run deploy         # build rồi đẩy thư mục dist kèm functions
-```
+- Nối với Git: Build command `npm run build`, Deploy command `npx wrangler deploy`. Phiên bản Node lấy từ `.node-version`.
+- Đẩy từ máy: `npx wrangler login` (lần đầu), sau đó `npm run deploy`.
+- Chạy thử y như trên Cloudflare: `npm run cf:dev` (mở http://127.0.0.1:8787).
 
-Chạy thử môi trường Cloudflare trên máy trước khi đẩy: `npm run cf:dev` (mở http://127.0.0.1:8788).
+Pages (cách khác): Build command `npm run build`, Build output directory `dist`; Cloudflare tự nhận thư mục `functions/`. Đẩy từ máy bằng `npm run deploy:pages`.
 
-Lưu ý: dữ liệu lưu trên trình duyệt (Đã lưu, bộ lọc, bản dịch) gắn với từng tên miền, nên bản trên Cloudflare bắt đầu trống, không mang theo dữ liệu từ localhost.
+Lưu ý:
+
+- Hugging Face chặn yêu cầu có Referer từ `*.workers.dev`, nên `index.html` đặt `<meta name="referrer" content="no-referrer">`. Đừng bỏ dòng này.
+- Dữ liệu lưu trên trình duyệt (Đã lưu, bộ lọc, bản dịch) gắn với từng tên miền, nên bản trên Cloudflare bắt đầu trống.
 
 ## Các trang
 

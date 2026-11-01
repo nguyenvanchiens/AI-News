@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "cf:dev": "vite build && wrangler pages dev dist --compatibility-date 2026-10-01",
-    "deploy": "vite build && wrangler pages deploy dist"
+    "cf:dev": "vite build && wrangler dev",
+    "deploy": "vite build && wrangler deploy",
+    "deploy:pages": "vite build && wrangler pages deploy dist"
   },
   "dependencies": {
     "react": "^19.3.1",

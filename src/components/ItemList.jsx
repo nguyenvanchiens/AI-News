@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../lib/store.jsx';
-import { PIPELINES, RateLimitError, SEVERITY, SOURCES } from '../lib/sources.js';
+import { PIPELINES, ProxyMissingError, RateLimitError, SEVERITY, SOURCES } from '../lib/sources.js';
 import { compact, matches, timeAgo } from '../lib/format.js';
 import { useVi } from '../lib/translate.js';
 import { COST_FILTERS, COST_LEVELS, getCost, useCost, useCostAnalysis } from '../lib/cost.js';
@@ -122,8 +122,8 @@ function errorText(error) {
   if (error instanceof RateLimitError) {
     return 'Nguồn này đang giới hạn số lượt gọi (GitHub cho khoảng 10 lượt tìm kiếm mỗi phút khi chưa đăng nhập). Đợi một phút rồi thử lại.';
   }
-  if (error.message === 'HTTP 404' || error instanceof SyntaxError) {
-    return 'Nguồn này cần proxy: chạy bằng npm run dev trên máy, hoặc trên Cloudflare Pages kèm thư mục functions.';
+  if (error instanceof ProxyMissingError) {
+    return 'Nguồn này cần proxy nhưng proxy chưa chạy ở nơi đang mở app. Xem mục "Đưa lên Cloudflare" trong README.';
   }
   return `Không tải được dữ liệu (${error.message}). Kiểm tra kết nối mạng rồi thử lại.`;
 }

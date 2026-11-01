@@ -1,0 +1,14 @@
+// Cấu hình Cloudflare Workers. Tên phải trùng Worker đang chạy (ai-news.<tài khoản>.workers.dev).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-news",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Chỉ /proxy/* chạy qua Worker; file tĩnh trả thẳng, không tốn lượt gọi Worker.
+    "run_worker_first": ["/proxy/*"]
+  }
+}

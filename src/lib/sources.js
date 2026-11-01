@@ -45,9 +45,12 @@ export const HN_PRESETS = {
 };
 
 export class RateLimitError extends Error {}
+export class ProxyMissingError extends Error {}
 
 async function request(url) {
   const res = await fetch(url);
+  // Nơi chạy app không có proxy thì /proxy/* trả về trang index.html, cần báo lỗi thay vì danh sách rỗng.
+  if (url.startsWith('/proxy/') && !res.headers.get('X-Mach-Proxy')) throw new ProxyMissingError(url);
   if (res.status === 403 || res.status === 429) throw new RateLimitError(`HTTP ${res.status}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res;

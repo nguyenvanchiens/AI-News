@@ -6,7 +6,16 @@ import { PROXY_TARGETS } from './proxy-targets.js';
 const proxy = Object.fromEntries(
   Object.entries(PROXY_TARGETS).map(([name, target]) => {
     const prefix = `/proxy/${name}`;
-    return [prefix, { target, changeOrigin: true, rewrite: (path) => path.slice(prefix.length) }];
+    return [
+      prefix,
+      {
+        target,
+        changeOrigin: true,
+        rewrite: (path) => path.slice(prefix.length),
+        // Giống proxy-handler.js: đánh dấu phản hồi đã đi qua proxy.
+        configure: (p) => p.on('proxyRes', (res) => (res.headers['x-mach-proxy'] = '1')),
+      },
+    ];
   }),
 );
 
